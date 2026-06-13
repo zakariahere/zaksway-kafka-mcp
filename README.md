@@ -3,7 +3,7 @@
 > An [MCP](https://modelcontextprotocol.io) server that gives your AI agents eyes into Apache Kafka.
 
 `kafka-mcp` exposes Kafka administration operations as **Model Context Protocol tools**, so assistants like
-**Claude Desktop**, **Claude Code**, or any MCP-compatible client can inspect your cluster in plain language —
+**Claude Desktop**, **Claude Code**, or any MCP-compatible client can inspect and operate your cluster in plain language —
 *"list all my topics with their replication factor"* — instead of you reaching for the CLI.
 
 It ships with a batteries-included `docker-compose.yml` that spins up a complete local Kafka lab
@@ -21,7 +21,10 @@ It ships with a batteries-included `docker-compose.yml` that spins up a complete
 ## ✨ Features
 
 - 🔌 **Drop-in MCP server** — runs over `stdio`, so any MCP client can launch it as a subprocess.
-- 📋 **Topic introspection** — list topics with their partition count and replication factor, with an option to include or hide internal (`__`) topics.
+- 📋 **Topic management** — list & describe topics, create / delete, add partitions, and read or alter configs.
+- 👥 **Consumer group insight** — list & describe groups, inspect members & assignments, and compute per-partition lag.
+- 📨 **Produce & peek** — send a message to a topic, or read recent records back without committing offsets.
+- 🩺 **Cluster & offset views** — describe brokers / controller and fetch earliest / latest watermarks per partition.
 - ⚡ **Async-friendly** — blocking Kafka admin calls are offloaded to worker threads so the event loop stays snappy.
 - 🐳 **Self-contained local lab** — one `docker compose up` gives you Kafka (KRaft, no ZooKeeper), Schema Registry, and a Web UI.
 - 🛠️ **Tiny & hackable** — a single `main.py` you can read in one sitting and extend with new tools.
@@ -38,7 +41,7 @@ It ships with a batteries-included `docker-compose.yml` that spins up a complete
 ```
 
 The agent never talks to Kafka directly — it calls a **tool**, `kafka-mcp` translates that into a
-`confluent-kafka` admin request, and returns structured JSON the model can reason about.
+`confluent-kafka` admin or client request, and returns structured JSON the model can reason about.
 
 ---
 
@@ -120,15 +123,29 @@ Restart the client, and `kafka-zaksway` will appear among your available tools.
 
 ## 🧰 Available tools
 
-### `list_topics`
+`kafka-mcp` exposes **14 tools** spanning topic management, consumer groups, the cluster, and the data plane.
+Tools marked ⚠️ are destructive (they delete data) — agents should confirm before calling them.
 
-List Kafka topics with their partition count and replication factor.
+| Category | Tool | Parameters | Description |
+| -------- | ---- | ---------- | ----------- |
+| **Topics** | `list_topics` | `withInternal: bool` | List topics with partition count & replication factor. |
+| **Topics** | `describe_topic` | `topic: str` | Per-partition leader / replicas / ISR + non-default config overrides. |
+| **Topics** | `create_topic` | `topic: str`, `partitions: int = 1`, `replication_factor: int = 1`, `config: dict = {}` | Create a new topic. |
+| **Topics** | `delete_topic` ⚠️ | `topic: str` | Permanently delete a topic and all of its data. |
+| **Topics** | `add_partitions` | `topic: str`, `new_total_count: int` | Increase a topic's partition count (cannot shrink). |
+| **Topics** | `alter_topic_config` | `topic: str`, `config: dict` | Set / update topic configuration entries. |
+| **Topics** | `get_topic_offsets` | `topic: str` | Earliest & latest offsets (watermarks) per partition. |
+| **Cluster** | `describe_cluster` | — | Cluster id, controller broker, and broker list. |
+| **Groups** | `list_consumer_groups` | — | All consumer groups with their state. |
+| **Groups** | `describe_consumer_group` | `group_id: str` | State, coordinator, members & their partition assignments. |
+| **Groups** | `consumer_group_lag` | `group_id: str` | Committed offset, end offset, and lag per partition. |
+| **Groups** | `delete_consumer_group` ⚠️ | `group_id: str` | Permanently delete a consumer group. |
+| **Data** | `produce_message` | `topic: str`, `value: str`, `key: str = null`, `partition: int = null` | Produce a single message and await delivery. |
+| **Data** | `consume_messages` | `topic: str`, `max_messages: int = 10`, `timeout_seconds: float = 5.0`, `from_beginning: bool = true` | Peek recent messages without committing offsets. |
 
-| Parameter      | Type   | Description                                                              |
-| -------------- | ------ | ----------------------------------------------------------------------- |
-| `withInternal` | `bool` | When `true`, include internal topics (those starting with `__`).        |
+> 💡 The registered MCP tool names are full descriptive sentences (e.g. `Show committed offsets and lag for a Kafka consumer group`); the short identifiers above mirror the Python functions in `main.py` and are used here for brevity.
 
-**Example response:**
+**Example — `list_topics` response:**
 
 ```json
 [
@@ -164,12 +181,19 @@ kafka-mcp/
 
 ## 🛣️ Roadmap
 
-A few natural next tools to add:
+Recently shipped ✅
 
-- [ ] `create_topic` / `delete_topic`
-- [ ] Describe consumer groups & their lag
-- [ ] Read/alter topic configs
-- [ ] Peek at the latest messages on a topic
+- [x] `create_topic` / `delete_topic`
+- [x] `add_partitions` & `alter_topic_config`
+- [x] Describe consumer groups & their lag
+- [x] Peek at the latest messages on a topic
+
+Ideas for what's next:
+
+- [ ] Reset / set consumer group offsets
+- [ ] ACL management (list / create / delete)
+- [ ] Broker config inspection
+- [ ] Schema Registry integration (list subjects & schemas)
 
 ---
 
