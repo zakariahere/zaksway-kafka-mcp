@@ -6,7 +6,7 @@ services:
     hostname: kafka
     container_name: kafka
     ports:
-      # External listener for clients on the host (e.g. main.py -> localhost:9092)
+      # External listener for clients on the host (e.g. the MCP server -> localhost:9092)
       - "9092:9092"
     environment:
       # --- KRaft (no ZooKeeper) ---

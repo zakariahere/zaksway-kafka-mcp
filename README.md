@@ -27,7 +27,7 @@ It ships with a batteries-included `docker-compose.yml` that spins up a complete
 - 🩺 **Cluster & offset views** — describe brokers / controller and fetch earliest / latest watermarks per partition.
 - ⚡ **Async-friendly** — blocking Kafka admin calls are offloaded to worker threads so the event loop stays snappy.
 - 🐳 **Self-contained local lab** — one `docker compose up` gives you Kafka (KRaft, no ZooKeeper), Schema Registry, and a Web UI.
-- 🛠️ **Tiny & hackable** — a single `main.py` you can read in one sitting and extend with new tools.
+- 🛠️ **Tiny & hackable** — a single module (`src/zaksway_kafka_mcp/__init__.py`) you can read in one sitting and extend with new tools.
 
 ---
 
@@ -82,7 +82,7 @@ This brings up three services:
 ### 3. Run the MCP server
 
 ```bash
-uv run main.py
+uv run kafka-zaksway
 ```
 
 You should see:
@@ -98,14 +98,14 @@ The server is now listening on `stdio`, ready for an MCP client to connect.
 ## 🤖 Connecting an MCP client
 
 Most clients (Claude Desktop, Claude Code, …) launch MCP servers from a JSON config.
-Point them at this project like so:
+Once it's installed from PyPI, point them at the published package — no clone required:
 
 ```jsonc
 {
   "mcpServers": {
     "kafka-zaksway": {
-      "command": "uv",
-      "args": ["--directory", "/absolute/path/to/kafka-mcp", "run", "main.py"],
+      "command": "uvx",
+      "args": ["zaksway-kafka-mcp"],
       "env": {
         "BOOTSTRAP_SERVER": "localhost:9092"
       }
@@ -115,7 +115,9 @@ Point them at this project like so:
 ```
 
 - **Claude Desktop** → add the block to `claude_desktop_config.json`.
-- **Claude Code** → `claude mcp add kafka-zaksway -- uv --directory /absolute/path/to/kafka-mcp run main.py`
+- **Claude Code** → `claude mcp add kafka-zaksway -- uvx zaksway-kafka-mcp`
+
+> 💡 Hacking on a local clone instead? Swap to `"command": "uv"` with `"args": ["--directory", "/absolute/path/to/zaksway-kafka-mcp", "run", "kafka-zaksway"]`.
 
 Restart the client, and `kafka-zaksway` will appear among your available tools.
 
@@ -143,7 +145,7 @@ Tools marked ⚠️ are destructive (they delete data) — agents should confirm
 | **Data** | `produce_message` | `topic: str`, `value: str`, `key: str = null`, `partition: int = null` | Produce a single message and await delivery. |
 | **Data** | `consume_messages` | `topic: str`, `max_messages: int = 10`, `timeout_seconds: float = 5.0`, `from_beginning: bool = true` | Peek recent messages without committing offsets. |
 
-> 💡 The registered MCP tool names are full descriptive sentences (e.g. `Show committed offsets and lag for a Kafka consumer group`); the short identifiers above mirror the Python functions in `main.py` and are used here for brevity.
+> 💡 The registered MCP tool names are full descriptive sentences (e.g. `Show committed offsets and lag for a Kafka consumer group`); the short identifiers above mirror the Python functions in `src/zaksway_kafka_mcp/__init__.py` and are used here for brevity.
 
 **Example — `list_topics` response:**
 
@@ -209,7 +211,6 @@ kafka-mcp/
 │   └── smoke_test.py   # Import/packaging check run in CI before publish
 ├── .github/workflows/
 │   └── publish.yml     # Build + publish to PyPI on `v*` tags (Trusted Publishing)
-├── main.py             # Backward-compat shim (keeps `uv run main.py` working)
 ├── docker-compose.yml  # Local Kafka lab (broker + schema registry + UI)
 ├── pyproject.toml      # Project metadata, dependencies & build backend
 ├── uv.lock             # Pinned dependency lockfile
