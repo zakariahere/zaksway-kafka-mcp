@@ -166,13 +166,52 @@ The server is configured entirely through environment variables.
 
 ---
 
+## 📦 Releasing to PyPI
+
+The package is published to PyPI as **[`zaksway-kafka-mcp`](https://pypi.org/p/zaksway-kafka-mcp)** by a GitHub Actions workflow (`.github/workflows/publish.yml`) that triggers on `v*` version tags and authenticates via **Trusted Publishing (OIDC)** — no API tokens stored anywhere.
+
+**One-time setup** — register a [Trusted Publisher](https://docs.pypi.org/trusted-publishers/) on PyPI:
+
+| Field             | Value                  |
+| ----------------- | ---------------------- |
+| Owner             | `zakariahere`          |
+| Repository        | `zaksway-kafka-mcp`    |
+| Workflow filename | `publish.yml`          |
+| Environment       | `pypi`                 |
+
+**To cut a release:**
+
+```bash
+# 1. Bump `version` in pyproject.toml (e.g. 0.1.0 -> 0.2.0), then:
+git commit -am "release: v0.2.0"
+git tag v0.2.0
+git push origin master --tags
+```
+
+The workflow verifies the tag matches `pyproject.toml`, builds the wheel + sdist, smoke-tests both, and publishes. **Once published**, anyone can run it with zero install:
+
+```bash
+uvx zaksway-kafka-mcp           # run the server directly
+# or
+pip install zaksway-kafka-mcp   # then run: kafka-zaksway
+```
+
+---
+
 ## 🗂️ Project structure
 
 ```
 kafka-mcp/
-├── main.py             # The MCP server + tool definitions
+├── src/zaksway_kafka_mcp/
+│   ├── __init__.py     # The MCP server + all 14 tool definitions
+│   └── __main__.py     # `python -m zaksway_kafka_mcp` entry point
+├── tests/
+│   └── smoke_test.py   # Import/packaging check run in CI before publish
+├── .github/workflows/
+│   └── publish.yml     # Build + publish to PyPI on `v*` tags (Trusted Publishing)
+├── main.py             # Backward-compat shim (keeps `uv run main.py` working)
 ├── docker-compose.yml  # Local Kafka lab (broker + schema registry + UI)
-├── pyproject.toml      # Project metadata & dependencies
+├── pyproject.toml      # Project metadata, dependencies & build backend
 ├── uv.lock             # Pinned dependency lockfile
 └── README.md           # You are here
 ```

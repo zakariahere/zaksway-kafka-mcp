@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__kafka-zaksway__Delete_.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python .claude/hooks/confirm_mcp.py",
+            "timeout": 30,
+            "statusMessage": "Confirming destructive Kafka operation"
+          }
+        ]
+      }
+    ]
+  }
+}

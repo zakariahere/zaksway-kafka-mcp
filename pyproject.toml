@@ -1,10 +1,23 @@
 [project]
-name = "kafka-mcp"
+name = "zaksway-kafka-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "An MCP server exposing Apache Kafka admin and data-plane operations as tools for AI agents."
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [{ name = "Zakaria BOUAZZA" }]
+keywords = ["kafka", "mcp", "model-context-protocol", "confluent-kafka", "ai-agents"]
 dependencies = [
     "confluent-kafka>=2.14.2",
     "mcp[cli]>=1.27.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/zakariahere/zaksway-kafka-mcp"
+Repository = "https://github.com/zakariahere/zaksway-kafka-mcp"
+
+[project.scripts]
+kafka-zaksway = "zaksway_kafka_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.11.3,<0.12"]
+build-backend = "uv_build"
